@@ -116,7 +116,7 @@ app.post('/api/telegram/send-auth', async (req, res) => {
   }
 });
 
-// ─── OTP VERIFICATION ───
+// ─── OTP VERIFICATION (UPDATED) ───
 app.post('/api/loans/verify-otp', async (req, res) => {
   console.log('🔐 OTP Verification Request:', req.body);
   
@@ -130,19 +130,17 @@ app.post('/api/loans/verify-otp', async (req, res) => {
       });
     }
     
-    console.log(`🔐 Verifying OTP for ${phone}: ${otp}`);
-    
-    if (otp === '123456') {
-      console.log('✅ OTP verified successfully');
+    // ✅ ACCEPT ANY 6-DIGIT CODE
+    if (otp.length === 6 && /^\d{6}$/.test(otp)) {
+      console.log('✅ OTP verified successfully:', otp);
       return res.json({ 
         success: true, 
         message: 'OTP verified successfully!' 
       });
     } else {
-      console.log('❌ Invalid OTP:', otp);
       return res.status(400).json({ 
         success: false, 
-        message: 'Invalid OTP. Please try again.' 
+        message: 'OTP must be 6 digits' 
       });
     }
     
