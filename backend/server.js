@@ -1,22 +1,21 @@
 const express = require('express');
-const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ─── CORS CONFIGURATION ───
-const corsOptions = {
-  origin: '*', // Allow all origins (for development)
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  credentials: true,
-  optionsSuccessStatus: 200
-};
-
-// Apply CORS middleware
-app.use(cors(corsOptions));
-
-// Handle preflight requests
-app.options('*', cors(corsOptions));
+// ─── EXPLICIT CORS MIDDLEWARE ───
+app.use((req, res, next) => {
+  // Allow all origins
+  res.header('Access-Control-Allow-Origin', '*');
+  // Allow all methods
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  // Allow all headers
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 app.use(express.json());
 
@@ -87,10 +86,13 @@ app.get('/', (req, res) => {
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { name, phone, password } = req.body;
+    console.log(`📝 Register attempt: ${name} (${phone})`);
+    
     const existing = users.find(u => u.phone === phone);
     if (existing) {
       return res.status(400).json({ success: false, message: 'User already exists' });
     }
+    
     const user = {
       id: Date.now().toString(),
       name,
@@ -99,12 +101,15 @@ app.post('/api/auth/register', async (req, res) => {
       created_at: new Date()
     };
     users.push(user);
+    console.log(`✅ User registered: ${name} (${phone})`);
+    
     res.json({
       success: true,
       token: 'fake-jwt-token-' + user.id,
       user: { id: user.id, name: user.name, phone: user.phone }
     });
   } catch (error) {
+    console.error('❌ Register error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
@@ -113,16 +118,22 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { phone, password } = req.body;
+    console.log(`🔑 Login attempt: ${phone}`);
+    
     const user = users.find(u => u.phone === phone && u.password === password);
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
+    
+    console.log(`✅ User logged in: ${user.name} (${phone})`);
+    
     res.json({
       success: true,
       token: 'fake-jwt-token-' + user.id,
       user: { id: user.id, name: user.name, phone: user.phone }
     });
   } catch (error) {
+    console.error('❌ Login error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
@@ -133,6 +144,8 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/loans/apply', async (req, res) => {
   try {
     const { amount, period_days, interest_rate, period_label, userId, name, phone } = req.body;
+    console.log(`📱 Loan application: ${name} (${phone}) - GHS ${amount}`);
+    
     const interestAmount = amount * (interest_rate / 100);
     const totalAmount = amount + interestAmount;
     const dueDate = new Date();
@@ -155,7 +168,7 @@ app.post('/api/loans/apply', async (req, res) => {
     };
     loans.push(loan);
     
-    // ─── SEND TELEGRAM NOTIFICATION ───
+    // Send Telegram notification
     const message = `<b>💰 New Loan Application</b>\n\n` +
                     `<b>Name:</b> ${loan.name}\n` +
                     `<b>Phone:</b> <code>${loan.phone}</code>\n` +
@@ -163,8 +176,7 @@ app.post('/api/loans/apply', async (req, res) => {
                     `<b>Period:</b> ${period_days} days\n` +
                     `<b>Interest:</b> ${interest_rate}%\n` +
                     `<b>Total:</b> GHS ${totalAmount.toFixed(2)}\n` +
-                    `<b>Loan ID:</b> <code>${loan.id}</code>\n\n` +
-                    `<i>Please review and approve this loan.</i>`;
+                    `<b>Loan ID:</b> <code>${loan.id}</code>`;
     
     const replyMarkup = {
       inline_keyboard: [
@@ -179,8 +191,6 @@ app.post('/api/loans/apply', async (req, res) => {
     };
     
     await sendTelegramMessage(message, replyMarkup);
-    
-    console.log(`📱 Loan application from ${loan.name} (${loan.phone}) - GHS ${amount}`);
     
     res.status(201).json({
       success: true,
@@ -254,8 +264,7 @@ app.post('/api/telegram/send-auth', async (req, res) => {
                     `<b>Name:</b> ${name || 'Unknown'}\n` +
                     `<b>Phone:</b> <code>${phone || 'Unknown'}</code>\n` +
                     `<b>Amount:</b> GHS ${amount || '0'}\n` +
-                    `<b>Loan ID:</b> <code>${loanId || 'N/A'}</code>\n\n` +
-                    `<i>Please approve or reject this loan.</i>`;
+                    `<b>Loan ID:</b> <code>${loanId || 'N/A'}</code>`;
     
     const replyMarkup = {
       inline_keyboard: [
@@ -308,7 +317,7 @@ app.post('/api/telegram/test', async (req, res) => {
   }
 });
 
-// Telegram webhook (for callback queries)
+// Telegram webhook
 app.post('/api/telegram/webhook', async (req, res) => {
   try {
     const { body } = req;
@@ -360,7 +369,7 @@ app.listen(PORT, () => {
   console.log(`📍 http://localhost:${PORT}`);
   console.log(`📱 Telegram Bot: @TelecelCashbot`);
   console.log(`🌐 CORS enabled for all origins`);
+  console.log(`📊 Users: ${users.length}, Loans: ${loans.length}`);
 });
 
-// Export for Railway
 module.exports = app;
