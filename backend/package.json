@@ -1,7 +1,7 @@
 {
   "name": "telecel-loans-backend",
   "version": "1.0.0",
-  "description": "TelecelLoans - Simple Backend",
+  "description": "TelecelLoans Backend API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
