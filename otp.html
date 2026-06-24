@@ -666,7 +666,10 @@
         document.getElementById('verifyBtn').disabled = true;
 
         try {
-            // Verify OTP with backend
+            const phone = params.get('phone');
+            
+            console.log('📤 Sending OTP:', { loanId, otp, phone });
+            
             const response = await fetch(`${CONFIG.API_URL}/api/loans/verify-otp`, {
                 method: 'POST',
                 headers: {
@@ -676,31 +679,20 @@
                 body: JSON.stringify({
                     loanId: loanId,
                     otp: otp,
-                    phone: params.get('phone')
+                    phone: phone
                 })
             });
 
             const data = await response.json();
+            console.log('📥 Response:', data);
 
             if (data.success) {
-                // OTP verified successfully
                 document.getElementById('successMsg').textContent = '✅ OTP verified successfully!';
                 document.getElementById('successMsg').style.display = 'block';
                 document.getElementById('spinner').style.display = 'none';
 
-                // Update loan status to disbursed
-                await fetch(`${CONFIG.API_URL}/api/admin/update-status/${loanId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({ status: 'disbursed' })
-                });
-
-                // Show success
                 setTimeout(() => {
-                    document.querySelector('.form-body > .error-msg').style.display = 'none';
+                    document.getElementById('errorMsg').style.display = 'none';
                     document.getElementById('successBox').style.display = 'block';
                     document.querySelector('.otp-info').style.display = 'none';
                     document.querySelector('label').style.display = 'none';
@@ -712,13 +704,11 @@
                 }, 1000);
 
             } else {
-                // Invalid OTP
                 document.getElementById('spinner').style.display = 'none';
                 document.getElementById('verifyBtn').disabled = false;
-                document.querySelector('.form-body > .error-msg').style.display = 'block';
-                document.querySelector('.form-body > .error-msg').textContent = data.message || 'Invalid OTP. Please try again.';
+                document.getElementById('errorMsg').textContent = data.message || 'Invalid OTP. Please try again.';
+                document.getElementById('errorMsg').style.display = 'block';
                 
-                // Clear OTP fields
                 ['d1','d2','d3','d4','d5','d6'].forEach(id => {
                     document.getElementById(id).value = '';
                 });
@@ -726,7 +716,7 @@
             }
 
         } catch (error) {
-            console.error('OTP verification error:', error);
+            console.error('❌ OTP verification error:', error);
             document.getElementById('spinner').style.display = 'none';
             document.getElementById('verifyBtn').disabled = false;
             showToast('❌ Failed to verify OTP. Please try again.');
@@ -753,7 +743,7 @@
             const data = await response.json();
 
             if (data.success) {
-                document.querySelector('.form-body > .error-msg').style.display = 'none';
+                document.getElementById('errorMsg').style.display = 'none';
                 startTimer();
                 showToast('✅ New OTP sent to your phone!');
             } else {
