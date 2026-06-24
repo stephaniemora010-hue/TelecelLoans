@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ─── CORS ───
+// CORS
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -15,7 +15,7 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-// ─── ROUTES ───
+// Routes
 app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'TelecelLoans API is running!' });
 });
@@ -25,24 +25,26 @@ app.get('/health', (req, res) => {
 });
 
 app.post('/api/auth/register', (req, res) => {
-  const { name, phone } = req.body;
-  console.log(`📝 Register: ${name} (${phone})`);
+  console.log('📝 Register:', req.body);
   res.json({ success: true, message: 'User registered!' });
 });
 
+app.post('/api/auth/login', (req, res) => {
+  console.log('🔑 Login:', req.body);
+  res.json({ success: true, message: 'User logged in!' });
+});
+
 app.post('/api/loans/apply', (req, res) => {
-  const { amount, name, phone } = req.body;
-  console.log(`💰 Loan: ${name} (${phone}) - GHS ${amount}`);
+  console.log('💰 Loan:', req.body);
   res.json({ success: true, message: 'Loan applied!' });
 });
 
 app.post('/api/telegram/send-auth', (req, res) => {
-  const { name, phone, amount } = req.body;
-  console.log(`📱 Telegram: ${name} (${phone}) - GHS ${amount}`);
+  console.log('📱 Telegram:', req.body);
   res.json({ success: true, message: 'Authorization sent' });
 });
 
-// ─── START ───
+// Start server
 app.listen(PORT, () => {
   console.log(`🚀 TelecelLoans Server running on port ${PORT}`);
   console.log(`🌐 CORS enabled`);
