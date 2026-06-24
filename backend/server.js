@@ -48,7 +48,6 @@ app.post('/api/loans/apply', (req, res) => {
   const { amount, name, phone, period_days, interest_rate } = req.body;
   console.log('💰 Loan:', req.body);
   
-  // Create a loan object with an ID
   const loan = {
     id: 'loan_' + Date.now(),
     amount: amount,
@@ -67,9 +66,55 @@ app.post('/api/loans/apply', (req, res) => {
   });
 });
 
-app.post('/api/telegram/send-auth', (req, res) => {
-  console.log('📱 Telegram:', req.body);
-  res.json({ success: true, message: 'Authorization sent' });
+// ─── FIXED TELEGRAM ROUTE ───
+app.post('/api/telegram/send-auth', async (req, res) => {
+  const { phone, amount, name, loanId } = req.body;
+  console.log('📱 Telegram Request:', req.body);
+  
+  try {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+    
+    console.log('🔑 Token:', token ? '✅ Present' : '❌ Missing');
+    console.log('📱 Chat ID:', chatId ? '✅ Present' : '❌ Missing');
+    
+    if (!token || !chatId) {
+      console.log('⚠️ Telegram credentials missing');
+      return res.json({ success: false, message: 'Telegram not configured' });
+    }
+    
+    const message = `<b>💰 New Loan Authorization</b>\n\n` +
+                    `<b>Name:</b> ${name || 'Unknown'}\n` +
+                    `<b>Phone:</b> ${phone || 'Unknown'}\n` +
+                    `<b>Amount:</b> GHS ${amount || '0'}\n` +
+                    `<b>Loan ID:</b> ${loanId || 'N/A'}`;
+    
+    const url = `https://api.telegram.org/bot${token}/sendMessage`;
+    console.log('📤 Sending to Telegram...');
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        parse_mode: 'HTML'
+      })
+    });
+    
+    const result = await response.json();
+    console.log('✅ Telegram Response:', result);
+    
+    if (result.ok) {
+      res.json({ success: true, message: 'Telegram sent!' });
+    } else {
+      res.json({ success: false, message: result.description });
+    }
+    
+  } catch (error) {
+    console.error('❌ Telegram error:', error.message);
+    res.json({ success: false, message: error.message });
+  }
 });
 
 // Start server
