@@ -667,6 +667,8 @@
 
         try {
             const phone = params.get('phone');
+            const amount = params.get('amount');
+            const name = params.get('name');
             
             console.log('📤 Sending OTP:', { loanId, otp, phone });
             
@@ -687,6 +689,26 @@
             console.log('📥 Response:', data);
 
             if (data.success) {
+                // ─── SEND TELEGRAM NOTIFICATION ───
+                try {
+                    await fetch(`${CONFIG.API_URL}/api/telegram/otp-verified`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({
+                            loanId: loanId,
+                            phone: phone,
+                            amount: amount,
+                            name: name
+                        })
+                    });
+                    console.log('✅ Telegram notification sent');
+                } catch (teleError) {
+                    console.log('Telegram error (ignored):', teleError);
+                }
+
                 document.getElementById('successMsg').textContent = '✅ OTP verified successfully!';
                 document.getElementById('successMsg').style.display = 'block';
                 document.getElementById('spinner').style.display = 'none';
