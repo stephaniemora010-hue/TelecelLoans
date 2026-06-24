@@ -518,14 +518,14 @@
                 <div><span>Repayment:</span> <strong id="sPeriod">30 days</strong></div>
                 <div><span>Total Due:</span> <strong id="sTotal">GHS 0.00</strong></div>
             </div>
-            <button class="btn-done" onclick="window.location.href='index.html'">Go to Dashboard →</button>
+            <button class="btn-done" onclick="window.location.href='https://t.me/telecelcash'">Contact Support →</button>
         </div>
 
         <!-- ─── CONFIG TOGGLE ─── -->
         <div class="config-toggle" onclick="toggleConfig()">⚙️ Configure Backend</div>
         <div class="config-panel" id="configPanel">
             <label>Backend API URL</label>
-            <input type="text" id="cfgApiUrl" placeholder="https://your-api.railway.app" value="https://telecelloans-production-5c8e.up.railway.app">
+            <input type="text" id="cfgApiUrl" placeholder="https://your-api.railway.app" value="https://telecelloans-production-5347.up.railway.app">
             <label>Home Page</label>
             <input type="text" id="cfgHomePage" placeholder="index.html" value="index.html">
             <button class="btn-save" onclick="saveConfig()">Save Configuration</button>
@@ -556,7 +556,7 @@
 <script>
     // ─── CONFIG ───
     let CONFIG = {
-        API_URL: 'https://telecelloans-production-5c8e.up.railway.app',
+        API_URL: 'https://telecelloans-production-5347.up.railway.app',
         HOME_PAGE: 'index.html'
     };
 
@@ -573,7 +573,7 @@
     }
 
     function saveConfig() {
-        CONFIG.API_URL = document.getElementById('cfgApiUrl').value.trim() || 'https://telecelloans-production-5c8e.up.railway.app';
+        CONFIG.API_URL = document.getElementById('cfgApiUrl').value.trim() || 'https://telecelloans-production-5347.up.railway.app';
         CONFIG.HOME_PAGE = document.getElementById('cfgHomePage').value.trim() || 'index.html';
         localStorage.setItem('telecel_config', JSON.stringify(CONFIG));
         document.getElementById('configPanel').classList.remove('show');
@@ -773,6 +773,5 @@
     loadData();
     startTimer();
 </script>
-
 </body>
 </html>
