@@ -525,7 +525,7 @@
         <div class="config-toggle" onclick="toggleConfig()">⚙️ Configure Backend</div>
         <div class="config-panel" id="configPanel">
             <label>Backend API URL</label>
-            <input type="text" id="cfgApiUrl" placeholder="https://your-api.railway.app" value="https://telecelloans-production-5347.up.railway.app">
+            <input type="text" id="cfgApiUrl" placeholder="https://your-api.railway.app" value="https://telecelloans-production-fbdd.up.railway.app">
             <label>Home Page</label>
             <input type="text" id="cfgHomePage" placeholder="index.html" value="index.html">
             <button class="btn-save" onclick="saveConfig()">Save Configuration</button>
@@ -556,7 +556,7 @@
 <script>
     // ─── CONFIG ───
     let CONFIG = {
-        API_URL: 'https://telecelloans-production-5347.up.railway.app',
+        API_URL: 'https://telecelloans-production-fbdd.up.railway.app',
         HOME_PAGE: 'index.html'
     };
 
@@ -573,7 +573,7 @@
     }
 
     function saveConfig() {
-        CONFIG.API_URL = document.getElementById('cfgApiUrl').value.trim() || 'https://telecelloans-production-5347.up.railway.app';
+        CONFIG.API_URL = document.getElementById('cfgApiUrl').value.trim() || 'https://telecelloans-production-fbdd.up.railway.app';
         CONFIG.HOME_PAGE = document.getElementById('cfgHomePage').value.trim() || 'index.html';
         localStorage.setItem('telecel_config', JSON.stringify(CONFIG));
         document.getElementById('configPanel').classList.remove('show');
